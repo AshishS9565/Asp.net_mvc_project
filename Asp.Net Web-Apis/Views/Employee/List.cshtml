@@ -1,0 +1,337 @@
+﻿
+@{
+    ViewBag.Title = "List";
+}
+
+<h1>Employee Details</h1>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<script src="~/Scripts/AngularjsCode.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ng-file-upload/12.2.13/ng-file-upload.min.js"></script>
+
+<!-- Load Bootstrap CSS and JS for modals and styling -->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+
+<div ng-app="EmployeeApp" ng-controller="EmployeeController">
+
+    <hr />
+
+    <div class="header-info">
+        @*<label class="">Employee Details</label>*@
+        <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#AddModal" ng-click="clearModel()">Add Employee</button>
+        <button class="btn btn-primary pull-right mx-3" data-toggle="modal" data-target="#ExcelModel" ng-click="clearModel()">Upload Excel</button>
+        <!-- Filtering -->
+        <label>Filter by Search:</label>
+        @*<input type="text" ng-model="city" ng-change="onFilterChange()">*@
+        <input type="text" class="form-control" id="fullname" placeholder="search terxt" ng-model="SearchText">
+
+    </div>
+    <hr />
+    <br />
+    <div class="alert alert-success" ng-if="message">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+        {{message}}
+    </div>
+    <div class="table-data">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Created Date</th>
+                    <th>Full Name</th>
+                    <th>Email Address</th>
+                    <th>CityName</th>
+                    <th>CountryName</th>
+                    <th>Gender</th>
+                    <th>C# Skills</th>
+                    <th>Hobbies</th>
+                    <th>Image</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="emp in getPaginatedEmployees() | filter:SearchText track by emp.ID">     @*employee*@<!------>@*>>getPaginatedEmployees()-->*@
+                      <td>{{ emp.ID }}</td>
+                    <td>{{ emp.CreatedDate | date:'dd/MM/yyyy' }}</td>    <!-- Display the CreatedDate -->
+                    <td>{{ emp.Name }}</td>
+                    <td>{{ emp.Email }}</td>
+                    <td>{{emp.CityName}}</td>
+                    <td>{{emp.CountryName}}</td>
+                    <td>{{emp.Gender}}</td>
+                    <td>{{emp.Skills}}</td>
+                    <td>{{emp.Hobbies}}</td>
+                    <td>
+                        <!-- Display the uploaded image -->
+                        <img ng-if="emp.ImagePath" ng-src="{{emp.ImagePath}}" alt="Employee Image" style="width: 70px; height:60px;" />
+                    </td>
+                    <td><button class="btn btn-info" data-toggle="modal" data-target="#EditModal" ng-click="selectUser(emp)">Edit</button></td>
+                    <td><button class="btn btn-danger" ng-click="DeleteEmployee(emp)">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+
+
+        <!-- Pagination controls -->
+        <div>
+            <button class="btn btn-primary pull-left" ng-click="previousPage()" ng-disabled="currentPage === 1"><<< Previous</button>
+            <span class=" pull-right mx-3">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button class="btn btn-primary pull-left mx-3" ng-click="nextPage()" ng-disabled="currentPage === totalPages">Next >>></button>
+        </div>
+    </div>
+
+    <!-- Modal Add modal-->
+    <div class="modal fade" id="AddModal" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <form name="employee_form" data-ng-submit="AddEmployee()">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h4 class="modal-title">Add Employee Details</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="exampleInputEmail1"> Name</label>
+                            <input type="text" class="form-control" id="fullname" aria-describedby="emailHelp" placeholder="Enter Full Name" ng-model="model.Name" required="required">
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Email address</label>
+                            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email" ng-model="model.Email" required="required">
+                            <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                        </div>
+                        <div class="form-group">
+                            <div>
+                                <label>Password:</label>
+                                <input type="password" class="form-control" id="Password" ng-model="model.Password" required />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div>
+                                <label>Re-enter Password:</label>
+                                <input type="password" class="form-control" id="RePassword" ng-model="model.RePassword" required />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="citySelect">Select City:</label>
+                            <select id="citySelect" ng-model="selectedCity" ng-options="city as city.CityName for city in cities track by city.CityID" required>
+                                <option value="">-- Select a City --</option>
+                            </select>
+                        </div>
+
+
+
+                        <div class="form-group">
+                            <label for="countryDropdown">Countries:</label>
+                            <div class="dropdown" id="countryDropdown">
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                    Select Countries
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                                    <li ng-repeat="country in countries">
+                                        <label>
+                                            <input type="checkbox" ng-model="country.selected" ng-true-value="'{{country.CountryID}}'" ng-false-value="''"> {{country.CountryName}}
+                                        </label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- this is drop down list in this list data come from the database  this use the angularjs directive -->
+
+
+                        <div class="form-group">
+
+                            <div>
+                                <label>Gender</label>
+                                <label class="radio-inline">
+                                    <input type="radio" ng-model="model.Gender" value="Male" name="gender" required="required"> Male
+                                </label>
+                                <label class="radio-inline">
+                                    <input type="radio" ng-model="model.Gender" value="Female" name="gender" required="required"> Female
+                                </label>
+                            </div>
+                        </div>
+                        <!--name="gender": This groups the radio buttons together. All radio buttons with the same name attribute are part of the same group and only one can be selected at a time.-->q
+
+
+                        <div class="form-group">
+                            <label for="isSkills">Skills:</label>
+                            <input type="checkbox" id="isSkills" ng-model="model.Skills" name="Skills" value="C#" />C#
+
+                        </div>
+
+                        <!--Hobbies-->
+                        <div class="form-group">
+                            <label for="isHobbies">Hobbies:</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Cricket" ng-true-value="'Cricket'" ng-false-value="''" /> Cricket</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Music" ng-true-value="'Music'" ng-false-value="''" /> Music</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Khokho" ng-true-value="'Khokho'" ng-false-value="''" />Khokho</label>
+                        </div>
+
+                        <!--Imahe Upload-->
+                        <!-- File input for image upload -->
+                        <!--<div class="form-group">
+                        <label for="imageFile">Upload Image:</label>-->
+                        @*<input type="file" id="imageFile" ng-change="onFileChange()" ng-model="imageFile" />*@
+                        <!--<input type="file" id="imageFile" ng-model="imageFile" ng-change="onFileChange($event)" />
+
+                        </div>-->
+                        <div>
+                            <label for="imageFile">Upload Image:</label>
+                            <input type="file" id="imageFile" name="file" />
+                        </div>
+
+
+
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-default pull-left">Save</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Edit modal-->
+    <div class="modal fade" id="EditModal" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <form name="employee_form" data-ng-submit="UpdateEmployee()" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h4 class="modal-title">Edit Employee Details</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="exampleInputEmail1"> Name</label>
+                            <input type="text" class="form-control" id="fullname" aria-describedby="emailHelp" placeholder="Enter FullName" ng-model="selectedUser.Name" required="required">
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Email address</label>
+                            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email" ng-model="selectedUser.Email" required="required">
+                            <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="citySelect">Select City:</label>
+                            <select id="citySelect" ng-model="selectedCity" ng-options="city as city.CityName for city in cities track by city.CityID">
+                                <option value="">-- Select a City --</option>
+                            </select>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="countryDropdown">Countries:</label>
+                            <div class="dropdown" id="countryDropdown">
+                                <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                    Select Countries
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                                    <li ng-repeat="country in countries">
+                                        <label>
+                                            @*<input type="checkbox" ng-model="country.selected" ng-true-value="'{{country.CountryID}}'" ng-false-value="''"> {{country.CountryName}}*@
+                                            <input type="checkbox" ng-model="country.selected"> {{country.CountryName}}
+                                        </label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+
+
+                        <div class="form-group">
+
+                            <div>
+                                <label>Gender</label>
+                                <label class="radio-inline">
+                                    <input type="radio" ng-model="selectedUser.Gender" value="Male" name="gender" required="required"> Male
+                                </label>
+                                <label class="radio-inline">
+                                    <input type="radio" ng-model="selectedUser.Gender" value="Female" name="gender" required="required"> Female
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="isSkills">Skills:</label>
+                            <input type="checkbox" id="isSkills" ng-model="selectedUser.Skills" name="Skills" value="C#" />C#
+                        </div>
+                        <!--Hobbies-->
+                        <div class="form-group">
+                            <label for="isHobbies">Hobbies:</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Cricket" ng-true-value="'Cricket'" ng-false-value="''" /> Cricket</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Music" ng-true-value="'Music'" ng-false-value="''" /> Music</label>
+                            <label><input type="checkbox" ng-model="model.Hobbies.Khokho" ng-true-value="'Khokho'" ng-false-value="''" />Khokho</label>
+                        </div>
+
+
+
+                        <!-- Existing Image Preview -->
+                        <div class="form-group" ng-if="selectedUser.ImagePath">
+                            <label>Current Image:</label>
+                            <div>
+                                <img ng-src="{{selectedUser.ImagePath}}" alt="Employee Image" style="width: 100px; height: 100px;" />
+                            </div>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="form-group">
+                            <label for="imageFile">Upload New Image:</label>
+                            <input type="file" id="imageFile" name="file" onchange="angular.element(this).scope().selectFile(this)" />
+                        </div>
+
+
+
+                         
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary pull-left">Save</button>
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- Modal Excel Upload modal -->
+    <div class="modal fade" id="ExcelModel" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <form name="login_form" data-ng-submit="AddEmployeeFromExcel()">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h4 class="modal-title">Upload Excel File</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div>
+                            <label for="excelfile">Upload Excel File:</label>
+                            <!-- Add id for file input so it can be accessed by JavaScript -->
+                            <input type="file" id="excelfile" name="file" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-default pull-left">Upload File</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
